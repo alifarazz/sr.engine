@@ -1,13 +1,16 @@
 // In his exalted name
 #include <iostream>
 #include <sstream>
-#include "./h/objmesh.hpp"
+#include <tuple>
+
 #include "./h/tgaimage.h"
+#include "h/objmesh.h"
+#include "h/utils.hpp"
 
 const TGAColor white = TGAColor(255, 255, 255, 255);
-const TGAColor red = TGAColor(255, 0, 0, 255);
+const TGAColor red   = TGAColor(255, 0, 0, 255);
 
-void draw_line(int x0, int y0, int x1, int y1, TGAImage& image, TGAColor color)
+void draw_line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color)
 {
   bool isSteep = false;
   int dx, dy;
@@ -23,11 +26,11 @@ void draw_line(int x0, int y0, int x1, int y1, TGAImage& image, TGAColor color)
     std::swap(y0, y1);
   }
 
-  dx = x1 - x0;
-  dy = y1 - y0;
+  dx      = x1 - x0;
+  dy      = y1 - y0;
   derror2 = std::abs(dy) * 2;
-  error2 = 0;
-  int y = y0;
+  error2  = 0;
+  int y   = y0;
   for (int x = x0; x <= x1; x++) {  // dx > dy
     if (isSteep)
       image.set(y, x, color);
@@ -48,40 +51,69 @@ void draw_line(int x0, int y0, int x1, int y1, TGAImage& image, TGAColor color)
   }
 }
 
-// void draw_tri_xy(int x0, int y0, int x1, int y1, int x2, int y2,
-//		 TGAImage& image, TGAColor& color)
-// {
-// }
-
-int main(int argc, char* argv[])
+void draw_wireframe(ObjMesh &mesh, TGAImage &image, int width, int height)
 {
-  int width = 2000, height = 2000;
-
-  TGAImage image(width, height, TGAImage::RGB);
-  // ObjMesh mesh("./mesh.obj");
-  if (argc == 1)
-    return -1;
-  ObjMesh mesh = std::string(argv[1]);
-
-  // for (size_t i = 0; i < mesh.getVerts().size(); i++) {
-  //   std::cout << "(" << mesh.getVerts()[i].x << ", " <<
-  //	      << ", " << mesh.getVerts()[i].z << ")" << std::endl;
-  // }
-
-  for (size_t i = 0; i < mesh.getFaces().size(); i++) {
-    std::vector<int> f = mesh.getFaces()[i];
+  for (size_t i = 0; i < mesh.nfaces(); i++) {
+    std::vector<int> f = mesh.getFace(i);
     for (int j = 0; j < 3; j++) {
-      Vec3f u = mesh.getVerts()[f[j]],
-	    v = mesh.getVerts()[f[(j + 1) % 3]];  // next point in triangle
-      draw_line((u.x + 1.0f) * width / 2.0f, (u.y + 1.0f) * height / 2.0f,
-		(v.x + 1.0f) * width / 2.0f, (v.y + 1.0f) * height / 2.0f,
-		image, white);
+      Vec3f u = mesh.getVert(f[j]),
+	    v = mesh.getVert(f[(j + 1) % 3]);  // next point in triangle
+      draw_line(static_cast<int>((u.x + 1.0f) * width / 2.0f),
+		static_cast<int>((u.y + 1.0f) * height / 2.0f),
+		static_cast<int>((v.x + 1.0f) * width / 2.0f),
+		static_cast<int>((v.y + 1.0f) * height / 2.0f), image, white);
     }
   }
+}
 
-  image.flip_vertically();  // set origin to bottom left
-  image.write_tga_file("output.tga");
+Vec3f calc_barycentric(Vec2i coords[], Vec2i &P)
+{
+  Vec2i a = coords[0], b = coords[1], c = coords[2];
+  Vec2i ab = b - a, ac = c - a, pa = a - P;
+  Vec3f cp = Vec3f(ab.x, ac.x, pa.x) ^ Vec3f(ab.y, ac.y, pa.y);
 
+  if (std::abs(cp.z) < 1)
+    return Vec3f(-1, 1, 1);  // tri is degenerate, discard pls
+
+  float u = cp.x / cp.z, v = cp.y / cp.z, w = 1.0f - ((cp.x + cp.y) / cp.z);
+  return Vec3f(w, u, v);
+}
+
+void draw_tri(Vec2i coords[], TGAImage &image, TGAColor color)
+{
+  Vec2i boxmin(image.get_width() - 1, image.get_height() - 1);
+  Vec2i boxmax(0, 0);
+  Vec2i clamp = boxmin;
+
+  for (int i = 0; i < 3; i++) {
+    Vec2i coord = coords[i];
+    for (int j = 0; j < 2; j++) {
+      boxmax.raw[j] = std::min(clamp.raw[j], std::max(boxmax.raw[j], coord.raw[j]));
+      boxmin.raw[j] = std::max(0, std::min(boxmin.raw[j], coord.raw[j]));
+    }
+  }
+  std::cout << coords[0] << coords[1] << coords[2] << std::endl;
+  std::cout << boxmin << std::endl;
+  std::cout << boxmax << std::endl;
+  std::cout << clamp << std::endl;
+
+  Vec2i P;
+  for (P.x = boxmin.x; P.x <= boxmax.x; P.x++)
+    for (P.y = boxmin.y; P.y <= boxmax.y; P.y++) {
+      Vec3f u = calc_barycentric(coords, P);
+      if (u.x < 0 || u.y < 0 || u.z < 0)
+	continue;
+      image.set(P.x, P.y, color);  // it's inside tri, draw it
+    }
+}
+
+int main(int argc, char *argv[])
+{
+  TGAImage image(200, 200, TGAImage::RGB);
+  Vec2i triCoords[3] = {Vec2i(10, 10), Vec2i(100, 30), Vec2i(190, 160)};
+  draw_tri(triCoords, image, red);
+  image.flip_vertically();
+  image.write_tga_file("tri_test.tga");
   return 0;
 }
 
@@ -101,3 +133,19 @@ int main(int argc, char* argv[])
 //   ObjMesh mesh("./mesh.obj");
 //   return 0;
 // }
+
+// int main(int argc, char *argv[])
+//{
+//  int width = 2000, height = 2000;
+//
+//  TGAImage image(width, height, TGAImage::RGB);
+//  if (argc == 1)
+//    return -1;
+//  ObjMesh mesh = std::string(argv[1]);
+//
+//  draw_wireframe(mesh, image, width, height);
+//
+//  image.flip_vertically();  // set origin to bottom left
+//  image.write_tga_file("output.tga");
+//  return 0;
+//}

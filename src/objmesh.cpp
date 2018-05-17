@@ -1,4 +1,4 @@
-#include "./h/objmesh.hpp"
+#include "h/objmesh.h"
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -13,7 +13,7 @@ std::vector<std::string> split(const std::string& s, char delim)
   while (getline(ss, item, delim)) {
     tokens.push_back(item);
   }
-  return tokens;
+   return tokens;
 }
 
 ObjMesh::ObjMesh(std::string filename)
@@ -43,8 +43,8 @@ ObjMesh::ObjMesh(std::string filename)
       int idx;
 
       iss >> trash;
-      while (iss >> idx >> trash >> itrash >>trash >> itrash) {
-      // while (iss >> idx >> trash >> trash >> itrash) {
+      while (iss >> idx >> trash >> itrash >> trash >> itrash) {
+	// while (iss >> idx >> trash >> trash >> itrash) {
 	idx--;  // in wavefront obj, all indices start at 1
 	// for (auto i : faces) std::cout << i;
 	// std::cout << std::endl;
@@ -59,6 +59,14 @@ ObjMesh::ObjMesh(std::string filename)
 
 ObjMesh::~ObjMesh() {}
 
-std::vector<std::vector<int>>& ObjMesh::getFaces() { return faces_; }
+size_t ObjMesh::nverts() { return verts_.size(); }
 
-std::vector<Vec3f>& ObjMesh::getVerts() { return verts_; }
+size_t ObjMesh::nfaces() { return faces_.size(); }
+
+std::vector<int> &ObjMesh::getFace(int idx) {
+    return faces_[idx];
+}
+
+Vec3f ObjMesh::getVert(int idx) {
+  return verts_[idx];
+}

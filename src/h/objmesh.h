@@ -2,7 +2,7 @@
 #define __OBJMESH_H__ 1
 
 #include <vector>
-#include "geometry.hpp"
+#include "geometry.h"
 
 class ObjMesh {
 private:
@@ -12,8 +12,9 @@ public:
   ObjMesh(std::string filename);
   ~ObjMesh();
 
-  std::vector<Vec3f>& getVerts();
-  std::vector<std::vector<int>>& getFaces();
+  size_t nverts();
+  size_t nfaces();
+  Vec3f getVert(int idx);
+  std::vector<int>& getFace(int idx);
 };
-
 #endif
