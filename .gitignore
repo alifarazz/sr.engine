@@ -41,3 +41,6 @@
 
 build/
 *.tga
+GPATH
+GRTAGS
+GTAGS

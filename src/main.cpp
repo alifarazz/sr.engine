@@ -1,3 +1,4 @@
+// In his exalted name
 #include <iostream>
 #include <sstream>
 #include "./h/objmesh.hpp"
@@ -9,6 +10,8 @@ const TGAColor red = TGAColor(255, 0, 0, 255);
 void draw_line(int x0, int y0, int x1, int y1, TGAImage& image, TGAColor color)
 {
   bool isSteep = false;
+  int dx, dy;
+  int error2, derror2;
 
   if (std::abs(x0 - x1) < std::abs(y0 - y1)) {  // if m > 1 then transpose
     std::swap(x0, y0);
@@ -20,8 +23,10 @@ void draw_line(int x0, int y0, int x1, int y1, TGAImage& image, TGAColor color)
     std::swap(y0, y1);
   }
 
-  int dx = x1 - x0, dy = y1 - y0;
-  int derror2 = std::abs(dy) * 2, error2 = 0;
+  dx = x1 - x0;
+  dy = y1 - y0;
+  derror2 = std::abs(dy) * 2;
+  error2 = 0;
   int y = y0;
   for (int x = x0; x <= x1; x++) {  // dx > dy
     if (isSteep)
@@ -54,21 +59,20 @@ int main(int argc, char* argv[])
 
   TGAImage image(width, height, TGAImage::RGB);
   // ObjMesh mesh("./mesh.obj");
-  if (argc == 1) return -1;
+  if (argc == 1)
+    return -1;
   ObjMesh mesh = std::string(argv[1]);
 
   // for (size_t i = 0; i < mesh.getVerts().size(); i++) {
   //   std::cout << "(" << mesh.getVerts()[i].x << ", " <<
-    //	      << ", " << mesh.getVerts()[i].z << ")" << std::endl;
+  //	      << ", " << mesh.getVerts()[i].z << ")" << std::endl;
   // }
 
   for (size_t i = 0; i < mesh.getFaces().size(); i++) {
     std::vector<int> f = mesh.getFaces()[i];
-
     for (int j = 0; j < 3; j++) {
       Vec3f u = mesh.getVerts()[f[j]],
 	    v = mesh.getVerts()[f[(j + 1) % 3]];  // next point in triangle
-
       draw_line((u.x + 1.0f) * width / 2.0f, (u.y + 1.0f) * height / 2.0f,
 		(v.x + 1.0f) * width / 2.0f, (v.y + 1.0f) * height / 2.0f,
 		image, white);
@@ -90,7 +94,8 @@ int main(int argc, char* argv[])
 //   istringstream iss(line);
 
 //   iss >> foo >> bar >> foo1 >> foo2 >> idx >> br3;
-//   cout << foo << "  " << bar << "  " << foo1 << "  " << foo2 << "  " << idx <<
+//   cout << foo << "  " << bar << "  " << foo1 << "  " << foo2 << "  " << idx
+//   <<
 //       "  " << br3 << endl;
 
 //   ObjMesh mesh("./mesh.obj");
