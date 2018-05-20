@@ -40,7 +40,7 @@
 
 
 build/
-*.tga
+output.tga
 GPATH
 GRTAGS
 GTAGS
