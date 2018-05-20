@@ -11,10 +11,10 @@ ColumnLimit: 100
 
 Language: Cpp
 DerivePointerAlignment: false
-PointerAlignment: Right
+# PointerAlignment: Right
 AlignConsecutiveAssignments: true
 AlignOperands: true
-#AllowShortFunctionsOnASingleLine: SFS_All
+# AllowShortFunctionsOnASingleLine: SFS_All
 
 BraceWrapping:
   AfterClass:      false
